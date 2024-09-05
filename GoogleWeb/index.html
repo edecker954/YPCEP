@@ -58,6 +58,7 @@
                     element.textContent = data[key] ? 'View Resume' : 'No Resume Available';
                 } else {
                     element.value = data[key];
+                  
                 }
             }
         }
@@ -177,7 +178,7 @@ function saveChanges() {
 </head>
 <body>
     <h1>Data for Row <?= row ?></h1>
-    <form id="dataForm" class="form-container">
+    <form id="dataForm" class="form-container" >
         <div class="form-group">
             <label  for="Entry ID">Entry ID:</label>
             <input  id="Entry ID" type="text" readonly>

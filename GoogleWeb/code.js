@@ -1,26 +1,24 @@
-function openPopup1(url, rowNum) {
-  var html = '<html><body><script>window.open("' + url + rowNum + '", "popup", "width=600,height=400");</script></body></html>';
-  var ui = SpreadsheetApp.getUi();
-  ui.showModalDialog(HtmlService.createHtmlOutput(html), 'Opening popup...');
-}
 function openPopup() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var row = sheet.getActiveCell().getRow();
   var url = sheet.getRange(row, 5).getValue(); // Assumes the URL is in column B
-url = "https://script.google.com/macros/s/AKfycbwEVPbCCD4m9emXSFxU8t83AnUg6-UMULPJrxDf2fbikNZO7_unl2lnS0hb7LfMkl_WCA/exec?row=11";
-  var html = '<html><body><script>window.open("' + url + '", "popup", "width=600,height=400");</script></body></html>';
+  url =
+    "https://script.google.com/macros/s/AKfycbwEVPbCCD4m9emXSFxU8t83AnUg6-UMULPJrxDf2fbikNZO7_unl2lnS0hb7LfMkl_WCA/exec?row=11";
+  var html =
+    '<html><body><script>window.open("' +
+    url +
+    '", "popup", "width=600,height=400");</script></body></html>';
   var ui = SpreadsheetApp.getUi();
-  ui.showModalDialog(HtmlService.createHtmlOutput(html), 'Opening popup...');
+  ui.showModalDialog(HtmlService.createHtmlOutput(html), "Opening popup...");
 }
 // Function to serve the HTML page
 
-function doGetOld() {
-  return HtmlService.createHtmlOutputFromFile('Index');
-}
 function doGet(e) {
-  var template = HtmlService.createTemplateFromFile('Index');
-  template.row = e.parameter.row || '2'; // Default to '2' if no row parameter
-  return template.evaluate().setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  var template = HtmlService.createTemplateFromFile("Index");
+  template.row = e.parameter.row || "2"; // Default to '2' if no row parameter
+  return template
+    .evaluate()
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 // Helper function to get the "Young Professionals" sheet
@@ -32,91 +30,110 @@ function getYoungProfessionalsSheet() {
   }
   return sheet;
 }
-function getRowData1(row) {
-  Logger.log('Getting data for row: ' + row);
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Young Professionals");
-  var data = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
-  return data;
-}
-function getRowData(row) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Young Professionals");
+function getRowData_old(row) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
+    "Young Professionals"
+  );
   var data = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
+
   var result = {};
   for (var i = 0; i < headers.length; i++) {
     var cellValue = data[i];
     // Check if the cell value is a date
-    if (Object.prototype.toString.call(cellValue) === '[object Date]') {
+    if (Object.prototype.toString.call(cellValue) === "[object Date]") {
       // Format the date as needed, e.g., YYYY-MM-DD
-      result[headers[i]] = Utilities.formatDate(cellValue, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      result[headers[i]] = Utilities.formatDate(
+        cellValue,
+        Session.getScriptTimeZone(),
+        "yyyy-MM-dd"
+      );
     } else {
       result[headers[i]] = cellValue;
     }
   }
-  
   return result;
 }
-function updateRowDataBeforeAllowingforOnlyChangedFields(row, data) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("YP Master");
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
-  var updateRange = sheet.getRange(row, 1, 1, headers.length);
-  var updateValues = headers.map(function(header) {
-    // Use the original header (with spaces) to access the data
-    var value = data[header] || '';
-    // Convert date strings back to Date objects
-    if (header.toLowerCase().includes('date') && value) {
-      return new Date(value);
-    }
-    return value;
-  });
-  
-  updateRange.setValues([updateValues]);
-  return true;
+function getUserEmail() {
+  return Session.getActiveUser().getEmail();
 }
+function checkPermissions(userEmail, rowRegion) {
+
+  var permissionsSheet = SpreadsheetApp.openById('1thy4ovkwoT4vSUeH68hCutlRLK0b-YbRHmdg9aFnrcY').getSheetByName('Permissions');
+  var permissionsData = permissionsSheet.getDataRange().getValues();
+  var temp = permissionsData[2][1];
+  for (var i = 1; i < permissionsData.length; i++) {
+    if (permissionsData[i][1] === userEmail) {
+      var allowedRegions = permissionsData[i][2].split(',').map(r => r.trim());
+      if (allowedRegions.includes(rowRegion)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+function getRowData(row) {
+  //Debuging logic so I can run in the debugger.
+  if (typeof row === 'undefined') {
+    row=2;
+  // Variable is undefined
+}
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Young Professionals");
+  var data = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  // Get the user's email
+  var userEmail = getUserEmail();
+
+  // Find the index of the "Region" column
+  var regionIndex = headers.indexOf("Region");
+  if (regionIndex === -1) {
+    throw new Error("Region column not found");
+  }
+
+  // Get the region for the current row
+  var rowRegion = data[regionIndex];
+  // Check if the user has permission to access this row
+  if (!checkPermissions(userEmail, rowRegion)) {
+    throw new Error("You do not have permission to access this data. " + regionIndex);
+  }
+
+  var result = {};
+  for (var i = 0; i < headers.length; i++) {
+    var cellValue = data[i];
+    //cellValue = rowRegion;
+    // Check if the cell value is a date
+    if (Object.prototype.toString.call(cellValue) === "[object Date]") {
+      // Format the date as needed, e.g., YYYY-MM-DD
+      result[headers[i]] = Utilities.formatDate(
+        cellValue,
+        Session.getScriptTimeZone(),
+        "yyyy-MM-dd"
+      );
+    } else {
+      result[headers[i]] = cellValue;
+    }
+  }
+  return result;
+}
+
 function updateRowData(row, data) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("YP Master");
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
+
   for (var i = 0; i < headers.length; i++) {
     var header = headers[i];
     if (data.hasOwnProperty(header)) {
       var value = data[header];
       // Convert date strings back to Date objects
-      if (header.toLowerCase().includes('date') && value) {
+      if (header.toLowerCase().includes("date") && value) {
         value = new Date(value);
       }
       sheet.getRange(row, i + 1).setValue(value);
     }
   }
-  
+
   return true;
-}
-function updateRowDataBeforChangingForHeaderSpaces(row, data) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("YP Master");
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
-  var updateRange = sheet.getRange(row, 1, 1, headers.length);
-  var updateValues = headers.map(function(header) {
-    var value = data[header.replace(/\s+/g, '_')] || '';
-    // Convert date strings back to Date objects
-    if (header.toLowerCase().includes('date') && value) {
-      return new Date(value);
-    }
-    return value;
-  });
-  
-  updateRange.setValues([updateValues]);
-  return true;
-}
-// Function to get data from a specific row
-function getRowDataOld(row) {
-  //row = 5;
-  var sheet = getYoungProfessionalsSheet();
-  var rowNumber = parseInt(row, 10);
-  var data = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
-  return data;
 }
 
 // Function to update a specific cell in a row
