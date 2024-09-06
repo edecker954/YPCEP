@@ -40,7 +40,14 @@
         var row = <?= row ?>;
         var hasPermission = <?= hasPermission ?>;
 
-       
+        function loadDataOld() {
+            google.script.run
+                .withSuccessHandler(displayData)
+                .withFailureHandler(function (error) {
+                    console.error('Error:', error);
+                })
+                .getRowData(row);
+        }
         function loadData() {
             google.script.run.withSuccessHandler(displayData).getRowData(<?= row ?>);
         }
@@ -61,7 +68,18 @@
                 }
             }
         }
-       
+
+        function displayDataOld(data) {
+            console.log('Data received:', data);
+            for (var key in data) {
+                if (data.hasOwnProperty(key)) {
+                    var input = document.getElementById(key);
+                    if (input) {
+                        input.value = data[key];
+                    }
+                }
+            }
+        }
         let changedFields = {};
 
         function trackChange(field) {
@@ -92,8 +110,72 @@
                 })
                 .updateRowData(row, data);
         }
-    
-       
+        function saveChangesWorkingBeforeTrackChanges() {
+            var data = {};
+            var inputs = document.getElementById('dataForm').elements;
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].id) {
+                    if (inputs[i].id === 'Resume') {
+                        data[inputs[i].id] = inputs[i].href;
+                    } else {
+                        // Use the original ID (with spaces) as the key
+                        data[inputs[i].id] = inputs[i].value;
+                    }
+                }
+            }
+            console.log("data: " + JSON.stringify(data));
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    alert('Changes saved successfully!');
+                })
+                .withFailureHandler(function (error) {
+                    console.error('Error:', error);
+                    alert('Failed to save changes. Please try again.');
+                })
+                .updateRowData(row, data);
+        }
+        function saveChangesOldForHyperLink() {
+            var data = {};
+            var inputs = document.getElementById('dataForm').elements;
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].id) {
+                    if (inputs[i].id === 'Resume') {
+                        data[inputs[i].id] = inputs[i].href;
+                    } else {
+                        data[inputs[i].id] = inputs[i].value;
+                    }
+                }
+            }
+            console.log("data: " + JSON.stringify(data));
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    alert('Changes saved successfully!');
+                })
+                .withFailureHandler(function (error) {
+                    console.error('Error:', error);
+                    alert('Failed to save changes. Please try again.');
+                })
+                .updateRowData(row, data);
+        }
+        function saveChangesold2() {
+            var data = {};
+            var inputs = document.getElementById('dataForm').elements;
+            for (var i = 0; i < inputs.length; i++) {
+                if (inputs[i].id) {
+                    data[inputs[i].id] = inputs[i].value;
+                }
+            }
+            console.log("data: " + data);
+            google.script.run
+                .withSuccessHandler(function (result) {
+                    alert('Changes saved successfully!');
+                })
+                .withFailureHandler(function (error) {
+                    console.error('Error:', error);
+                    alert('Failed to save changes. Please try again.');
+                })
+                .updateRowData(row, data);
+        }
         function checkAndLoadData() {
             // loadData();
             const hasPermissionBool = Boolean(hasPermission);
