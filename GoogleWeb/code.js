@@ -1,3 +1,4 @@
+var SHEET_NAME = "YP Master";
 function openPopup() {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var row = sheet.getActiveCell().getRow();
@@ -12,18 +13,14 @@ function openPopup() {
     ui.showModalDialog(HtmlService.createHtmlOutput(html), "Opening popup...");
 }
 // Function to serve the HTML page
-
 function doGet(e) {
     var template = HtmlService.createTemplateFromFile("Index");
     template.row = e.parameter.row || "2"; // Default to '2' if no row parameter
-
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Young Professionals");
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var data = sheet.getRange(template.row, 1, 1, sheet.getLastColumn()).getValues()[0];
-
     var regionIndex = headers.indexOf("Region");
     var rowRegion = data[regionIndex];
-
     var userEmail = Session.getActiveUser().getEmail();
     var hasPermission = checkPermissions(userEmail, rowRegion);
 
@@ -35,8 +32,15 @@ function doGet(e) {
         .evaluate()
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
-// Helper function to get the "Young Professionals" sheet
+function doGetOld(e) {
+    var template = HtmlService.createTemplateFromFile("Index");
+    template.row = e.parameter.row || "2"; // Default to '2' if no row parameter
+    return template
+        .evaluate()
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
 
+// Helper function to get the "Young Professionals" sheet
 
 function getUserEmail() {
     return Session.getActiveUser().getEmail();
@@ -62,7 +66,7 @@ function getRowData(row) {
         row = 2;
         // Variable is undefined
     }
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Young Professionals");
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     var data = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
@@ -77,13 +81,14 @@ function getRowData(row) {
 
     // Get the region for the current row
     var rowRegion = data[regionIndex];
+    var result = {};
     // Check if the user has permission to access this row
     if (!checkPermissions(userEmail, rowRegion)) {
-        //throw new Error("You do not have permission to access this data. " + regionIndex);
-        return;  //
+        //throw new Error("You do not have permission to access this data. " //+ regionIndex);
+        return result;
     }
 
-    var result = {};
+
     for (var i = 0; i < headers.length; i++) {
         var cellValue = data[i];
         //cellValue = rowRegion;
@@ -103,7 +108,7 @@ function getRowData(row) {
 }
 
 function updateRowData(row, data) {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("YP Master");
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
     for (var i = 0; i < headers.length; i++) {
@@ -120,9 +125,21 @@ function updateRowData(row, data) {
 
     return true;
 }
-
-// Function to update a specific cell in a row
 function updateSingleRowData(row, column, newValue) {
+    //Used for debugging.
+    if (typeof row === 'undefined') {
+        row = 2;
+        column = 4;
+        newValue = "Unknown";
+    }
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    var rowNumber = parseInt(row, 10);
+    var columnNumber = parseInt(column, 10);
+    sheet.getRange(rowNumber, columnNumber).setValue(newValue);
+    return "Update successful";
+}
+// Function to update a specific cell in a row
+function updateSingleRowDataOld(row, column, newValue) {
     var sheet = getYoungProfessionalsSheet();
     var rowNumber = parseInt(row, 10);
     var columnNumber = parseInt(column, 10);
