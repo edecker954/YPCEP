@@ -3,37 +3,6 @@
 <head>
     <base target="_top">
     <style>
-        .overlay-div {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .message-box {
-            background-color: #f8f9fa;
-            border: 2px solid #6c757d;
-            border-radius: 8px;
-            padding: 20px;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-            .message-box p {
-                margin-bottom: 15px;
-            }
-
-            .message-box button {
-                margin: 0 5px;
-            }
-
         .form-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -207,135 +176,34 @@
                 })
                 .updateRowData(row, data);
         }
-        function CheckPermissions() {
-            if (hasPermission === "true") {
-                document.getElementById('formDiv').style.display = 'block';
-                document.getElementById('noPermissionMessage').style.display = 'none';
-
-            } else {
-
-                document.getElementById('formDiv').style.display = 'none';
-                document.getElementById('noPermissionMessage').style.display = 'block';
-
-            }
-
-        }
         function checkAndLoadData() {
             // loadData();
-
-            //I'm not sure why but this is working
-            //const hasPermissionBool = Boolean(hasPermission);
-            //if (hasPermissionBool) {
-            if (hasPermission === "true") {
+            const hasPermissionBool = Boolean(hasPermission);
+            console.log("Value of hasPermission " + hasPermission)
+            console.log("Type of hasPermission:", typeof hasPermission);
+            console.log("Value of hasPermission:", hasPermission);
+            //return;
+            if (hasPermissionBool) {
+                console.log("Value of hasPermission2 " + hasPermission)
                 loadData();
-            }
+                console.log("Value of hasPermission3 " + hasPermission)
 
-            if (hasPermission === "true") {
-                //  if (hasPermissionBool) {
-                document.getElementById('formDiv').style.display = 'block';
                 document.getElementById('noPermissionMessage').style.display = 'none';
-
+                document.getElementById('formDiv').style.display = 'block';
+                console.log("here1");
             } else {
-
+                console.log("Value of hasPermission4 " + hasPermission)
                 document.getElementById('formDiv').style.display = 'none';
                 document.getElementById('noPermissionMessage').style.display = 'block';
-
-            }
-            //CheckPermissions();
-        }
-        function checkAndLoadDataOld() {
-            loadData();
-            const hasPermissionBool = Boolean(hasPermission);
-            if (!hasPermissionBool) {
-                document.getElementById('formDiv').style.display = 'none';
-            } else {
-                document.getElementById('formDiv').style.display = 'block';
-
-
+                console.log("here2");
             }
         }
         //window.onload = loadData;
-
-        function handleIncorrectRegion() {
-            if (confirm("This will remove this person from your region and will be sent to Head Quarters for region assignment. Are you sure you wish to do this?")) {
-                //document.getElementById('Region').value = "Unknown";
-                google.script.run.withSuccessHandler(onRegionChangeSuccess).updateSingleRowData(<?= row ?>, 4, "Unknown999999999999");
-            }
-        }
-
-        function onRegionChangeSuccessOld() {
-            alert("The user has been sent back to headquarters to evaluate region placement.");
-            google.script.host.close();
-        }
-        function onRegionChangeSuccess() {
-            document.getElementById('successDiv').style.display = 'flex';
-        }
-
-        function saveChangesold2() {
-            // ... existing saveChanges code ...
-            google.script.run.withSuccessHandler(function () {
-                alert("Changes saved successfully!");
-            }).updateRowData(<?= row ?>, formData);
-        }
-        function showConfirmation() {
-            document.getElementById('confirmationDiv').style.display = 'flex';
-        }
-
-        function cancelRegionChange() {
-            document.getElementById('confirmationDiv').style.display = 'none';
-        }
-
-        function confirmRegionChange() {
-            document.getElementById('Region').value = "Unknown";
-            google.script.run.withSuccessHandler(onRegionChangeSuccess).updateSingleRowData(<?= row ?>, 4, "Unknown");
-            document.getElementById('confirmationDiv').style.display = 'none';
-        }
-
-        function onRegionChangeSuccess() {
-            document.getElementById('formDiv').style.display = 'none';
-            document.getElementById('successDiv').style.display = 'flex';
-        }
-
-        function closeWindow() {
-            //google.script.host.close();
-            document.getElementById('successDiv').style.display = 'none';
-            document.getElementById('formDiv').style.display = 'none';
-
-        }
-
-        function saveChanges() {
-            var data = {};
-            var inputs = document.getElementById('dataForm').elements;
-            for (var i = 0; i < inputs.length; i++) {
-                if (inputs[i].id && changedFields[inputs[i].id]) {
-                    if (inputs[i].id === 'Resume') {
-                        data[inputs[i].id] = inputs[i].href;
-                    } else {
-                        data[inputs[i].id] = inputs[i].value;
-                    }
-                }
-            }
-            console.log("Changed data: " + JSON.stringify(data));
-            google.script.run
-                .withSuccessHandler(function (result) {
-                    alert('Changes saved successfully!');
-                    changedFields = {}; // Reset changed fields
-                })
-                .withFailureHandler(function (error) {
-                    console.error('Error:', error);
-                    alert('Failed to save changes. Please try again.');
-                })
-                .updateRowData(row, data);
-            google.script.run.withSuccessHandler(function () {
-                alert("Changes saved successfully!");
-            }).updateRowData(<?= row ?>, formData);
-        }
     </script>
 </head>
 <!--<body onload="<?= hasPermission ? 'loadData()' : '' ?>"> -->
 <!-- <body onload="loadData()">-->
-<!--<body onload="checkAndLoadData()"> -->
-<body onload="checkAndLoadData()" onloadeddata="CheckPermissions()">
+<body onload="checkAndLoadData()">
     <div hidden id="permissionInfo">
         <p>Permission status: <?= hasPermission ? "Granted" : "Denied" ?></p>
         <p>Permission status: <?= hasPermission ?></p>
@@ -346,22 +214,7 @@
         <p>Sorry, the logged in user (<?= userEmail ?>) does not have permissions for the region: <?= rowRegion ?></p>
     </div>
     <h1 hidden>Data for Row <?= row ?></h1>
-    <div id="confirmationDiv" class="overlay-div" style="display: none;">
-        <div class="message-box">
-            <p>This will remove this person from your region and will be sent to Head Quarters for region assignment. Are you sure you wish to do this?</p>
-            <button onclick="confirmRegionChange()" class="btn btn-danger">Yes</button>
-            <button onclick="cancelRegionChange()" class="btn btn-secondary">No</button>
-        </div>
-    </div>
-
-    <div id="successDiv" class="overlay-div" style="display: none;">
-        <div class="message-box">
-            <p>The user has been sent back to headquarters to evaluate region placement.</p>
-            <button onclick="closeWindow()" class="btn btn-primary">OK</button>
-        </div>
-    </div>
     <div id="formDiv">
-        <button hidden onclick="CheckPermissions()" class="btn btn-danger">Check Permissions</button>
         <form id="dataForm" class="form-container">
 
             <div class="form-group">
@@ -378,8 +231,7 @@
             </div>
             <div class="form-group">
                 <label for="Region">Region:</label>
-                <input type="text" class="form-control" id="Region" name="Region" readonly>
-                <button type="button" class="btn btn-warning" onclick="showConfirmation()">Incorrect Region</button>
+                <input id="Region" type="text">
             </div>
 
             <div class="form-group">
