@@ -1,4 +1,4 @@
-var SHEET_NAME = "YP Master";
+var SHEET_NAME = "Young Professionals";
 function openPopup() {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var row = sheet.getActiveCell().getRow();
@@ -12,39 +12,266 @@ function openPopup() {
     var ui = SpreadsheetApp.getUi();
     ui.showModalDialog(HtmlService.createHtmlOutput(html), "Opening popup...");
 }
-// Function to serve the HTML page
 function doGet(e) {
-    var template = HtmlService.createTemplateFromFile("Index");
-    template.row = e.parameter.row || "2"; // Default to '2' if no row parameter
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var data = sheet.getRange(template.row, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var regionIndex = headers.indexOf("Region");
-    var rowRegion = data[regionIndex];
+  var template = HtmlService.createTemplateFromFile("Index");
+  template.entryId = e && e.parameter && e.parameter.entryId ? e.parameter.entryId : "332";
+
+  var result = getData(template.entryId);
+
+  template.hasPermission = result.hasPermission;
+  template.userEmail = result.userEmail;
+  template.rowRegion = result.rowRegion;
+  template.errorMessage = result.hasPermission ? "" : "Entry ID:" + template.entryId + " not found or no permission";
+
+  var htmlOutput = template.evaluate()
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return htmlOutput;
+}
+function doGet1(e) {
+  var template = HtmlService.createTemplateFromFile("Index");
+  
+  // Only set the entryId if provided
+  if (e && e.parameter && e.parameter.entryId) {
+    template.entryId = e.parameter.entryId;
+  } else {
+    template.entryId = "332"; // Default EntryID
+  }
+  var userEmail = Session.getActiveUser().getEmail();
+  var htmlOutput = template.evaluate()
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return htmlOutput;
+}
+function doGet2(e) {
+  var template = HtmlService.createTemplateFromFile("Index");
+  
+  if (typeof e === 'undefined' || !e || !e.parameter || !e.parameter.entryId) {
+    template.entryId = "332"; // Default EntryID if e is undefined or doesn't contain the expected parameter
+  } else {
+    template.entryId = e.parameter.entryId;
+  }
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  var regionIndex = headers.indexOf("Region");
+
+  // Use getRange().createTextFinder() to find the row with the matching Entry ID
+  var textFinder = sheet.getRange(2, entryIdIndex + 1, sheet.getLastRow() - 1, 1).createTextFinder(template.entryId);
+  var foundRange = textFinder.findNext();
+
+  if (foundRange) {
+    var rowData = sheet.getRange(foundRange.getRow(), 1, 1, sheet.getLastColumn()).getValues()[0];
+    var rowRegion = rowData[regionIndex];
     var userEmail = Session.getActiveUser().getEmail();
     var hasPermission = checkPermissions(userEmail, rowRegion);
 
     template.userEmail = userEmail;
     template.rowRegion = rowRegion;
+    //template.hasPermission = true;
     template.hasPermission = hasPermission;
 
-    return template
-        .evaluate()
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    template.errorMessage = "";
+  } else {
+    template.hasPermission = false;
+    template.userEmail = userEmail;
+    template.rowRegion = "Not Found";
+    template.hasPermission = false;
+    template.errorMessage = "Entry ID:" + template.entryId + " not found";
+  }
+var myTemplate = template.evaluate()
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return myTemplate;
 }
-function doGetOld(e) {
-    var template = HtmlService.createTemplateFromFile("Index");
-    template.row = e.parameter.row || "2"; // Default to '2' if no row parameter
-    return template
-        .evaluate()
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
+function getData2(entryId, fullSheet = false) {
+  entryId = 333;
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  var regionIndex = headers.indexOf("Region");
 
-// Helper function to get the "Young Professionals" sheet
+  if (fullSheet) {
+    return { headers: headers, data: data.slice(1) };
+  }
+
+  if (typeof entryId === 'undefined') {
+    throw new Error("Entry ID is required for single row retrieval");
+  }
+
+  var rowData = data.find(row => row[entryIdIndex] == entryId);
+  if (!rowData) {
+    throw new Error("Entry ID not found");
+  }
+
+  var userEmail = Session.getActiveUser().getEmail();
+  var rowRegion = rowData[regionIndex];
+  var hasPermission = checkPermissions(userEmail, rowRegion);
+
+  if (!hasPermission) {
+    return { hasPermission: false, userEmail: userEmail, rowRegion: rowRegion };
+  }
+
+  var result = {
+    hasPermission: true,
+    userEmail: userEmail,
+    rowRegion: rowRegion,
+    data: {
+      rowNumber: rowIndex + 1 // Adding 1 because array index is 0-based, but sheet rows are 1-based
+    }
+  };
+
+  for (var i = 0; i < headers.length; i++) {
+    var cellValue = rowData[i];
+    if (Object.prototype.toString.call(cellValue) === "[object Date]") {
+      result.data[headers[i]] = Utilities.formatDate(
+        cellValue, Session.getScriptTimeZone(), "yyyy-MM-dd"
+      );
+    } else {
+      result.data[headers[i]] = cellValue;
+    }
+  }
+
+  return result;
+}
+function getData(entryId, fullSheet = false) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  var regionIndex = headers.indexOf("Region");
+
+  if (fullSheet) {
+    return { headers: headers, data: data.slice(1) };
+  }
+
+  if (typeof entryId === 'undefined') {
+    throw new Error("Entry ID is required for single row retrieval");
+  }
+
+  var rowIndex = data.findIndex(row => row[entryIdIndex] == entryId);
+  if (rowIndex === -1) {
+    throw new Error("Entry ID not found");
+  }
+
+  var rowData = data[rowIndex];
+  var userEmail = Session.getActiveUser().getEmail();
+  var rowRegion = rowData[regionIndex];
+  var hasPermission = checkPermissions(userEmail, rowRegion);
+
+  if (!hasPermission) {
+    return { hasPermission: false, userEmail: userEmail, rowRegion: rowRegion };
+  }
+
+  var result = {
+    hasPermission: true,
+    userEmail: userEmail,
+    rowRegion: rowRegion,
+    data: {
+      rowNumber: rowIndex + 1 // Adding 2 because array index is 0-based, sheet rows are 1-based, and we have a header row
+    }
+  };
+
+  for (var i = 0; i < headers.length; i++) {
+    var cellValue = rowData[i];
+    if (Object.prototype.toString.call(cellValue) === "[object Date]") {
+      result.data[headers[i]] = Utilities.formatDate(
+        cellValue, Session.getScriptTimeZone(), "yyyy-MM-dd"
+      );
+    } else {
+      result.data[headers[i]] = cellValue;
+    }
+  }
+
+  return result;
+}
+function getRowData(entryId) {
+  if (typeof entryId === 'undefined') {
+    //throw new Error("Entry ID is required");
+    entryId = 333;
+  }
+  
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  
+  if (entryIdIndex === -1) {
+    throw new Error("Entry ID column not found");
+  }
+  
+  var rowData = data.find(row => row[entryIdIndex] == entryId);
+  
+  if (!rowData) {
+    throw new Error("Entry ID not found");
+  }
+  
+  var userEmail = getUserEmail();
+  var regionIndex = headers.indexOf("Region");
+  var rowRegion = rowData[regionIndex];
+  
+  if (!checkPermissions(userEmail, rowRegion)) {
+    return null;
+  }
+  
+  var result = {};
+  for (var i = 0; i < headers.length; i++) {
+    var cellValue = rowData[i];
+    if (Object.prototype.toString.call(cellValue) === "[object Date]") {
+      result[headers[i]] = Utilities.formatDate(
+        cellValue, Session.getScriptTimeZone(), "yyyy-MM-dd"
+      );
+    } else {
+      result[headers[i]] = cellValue;
+    }
+  }
+  return result;
+}
+function getRowDataOld(entryId) {
+  if (typeof entryId === 'undefined') {
+    throw new Error("Entry ID is required");
+  }
+  
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  
+  if (entryIdIndex === -1) {
+    throw new Error("Entry ID column not found");
+  }
+  
+  var rowData = data.find(row => row[entryIdIndex] == entryId);
+  
+  if (!rowData) {
+    throw new Error("Entry ID not found");
+  }
+  
+  var userEmail = getUserEmail();
+  var regionIndex = headers.indexOf("Region");
+  var rowRegion = rowData[regionIndex];
+  
+  if (!checkPermissions(userEmail, rowRegion)) {
+    return null;
+  }
+  
+  var result = {};
+  for (var i = 0; i < headers.length; i++) {
+    var cellValue = rowData[i];
+    if (Object.prototype.toString.call(cellValue) === "[object Date]") {
+      result[headers[i]] = Utilities.formatDate(
+        cellValue, Session.getScriptTimeZone(), "yyyy-MM-dd"
+      );
+    } else {
+      result[headers[i]] = cellValue;
+    }
+  }
+  return result;
+}
 
 function getUserEmail() {
     return Session.getActiveUser().getEmail();
 }
+
 function checkPermissions(userEmail, rowRegion) {
 
     var permissionsSheet = SpreadsheetApp.openById('1thy4ovkwoT4vSUeH68hCutlRLK0b-YbRHmdg9aFnrcY').getSheetByName('Permissions');
@@ -60,95 +287,141 @@ function checkPermissions(userEmail, rowRegion) {
     }
     return false;
 }
-function getRowData(row) {
-    //Debuging logic so I can run in the debugger.
-    if (typeof row === 'undefined') {
-        row = 2;
-        // Variable is undefined
+function updateRowData1(entryId, data) { 
+    var rowData = getData(entryId);
+    var rowIndex = rowData.data.rowNumber;
+  if (!rowData.hasPermission) {
+    throw new Error("No permission to update this row");
+  }
+  
+  if (rowIndex === -1) {
+    throw new Error("Entry ID not found");
+  }
+  
+  for (var i = 0; i < headers.length; i++) {
+    var header = headers[i];
+    if (data.hasOwnProperty(header)) {
+      var value = data[header];
+      if (header.toLowerCase().includes("date") && value) {
+        value = new Date(value);
+      }
+      sheet.getRange(rowIndex + 1, i + 1).setValue(value);
     }
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    var data = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-
-    // Get the user's email
-    var userEmail = getUserEmail();
-
-    // Find the index of the "Region" column
-    var regionIndex = headers.indexOf("Region");
-    if (regionIndex === -1) {
-        throw new Error("Region column not found");
-    }
-
-    // Get the region for the current row
-    var rowRegion = data[regionIndex];
-    var result = {};
-    // Check if the user has permission to access this row
-    if (!checkPermissions(userEmail, rowRegion)) {
-        //throw new Error("You do not have permission to access this data. " //+ regionIndex);
-        return result;
-    }
-
-
-    for (var i = 0; i < headers.length; i++) {
-        var cellValue = data[i];
-        //cellValue = rowRegion;
-        // Check if the cell value is a date
-        if (Object.prototype.toString.call(cellValue) === "[object Date]") {
-            // Format the date as needed, e.g., YYYY-MM-DD
-            result[headers[i]] = Utilities.formatDate(
-                cellValue,
-                Session.getScriptTimeZone(),
-                "yyyy-MM-dd"
-            );
-        } else {
-            result[headers[i]] = cellValue;
-        }
-    }
-    return result;
+  }
+  return true;
 }
+function updateRowData(entryId, data) { 
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  var allData = sheet.getDataRange().getValues();
+  var rowIndex = allData.findIndex(row => row[entryIdIndex] == entryId);
 
-function updateRowData(row, data) {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-
-    for (var i = 0; i < headers.length; i++) {
-        var header = headers[i];
-        if (data.hasOwnProperty(header)) {
-            var value = data[header];
-            // Convert date strings back to Date objects
-            if (header.toLowerCase().includes("date") && value) {
-                value = new Date(value);
-            }
-            sheet.getRange(row, i + 1).setValue(value);
-        }
+  if (rowIndex === -1) {
+    throw new Error("Entry ID not found");
+  }
+  
+  for (var i = 0; i < headers.length; i++) {
+    var header = headers[i];
+    if (data.hasOwnProperty(header)) {
+      var value = data[header];
+      if (header.toLowerCase().includes("date") && value) {
+        value = new Date(value);
+      }
+      sheet.getRange(rowIndex + 1, i + 1).setValue(value);
     }
-
-    return true;
+  }
+  return true;
 }
-function updateSingleRowData(row, column, newValue) {
-    //Used for debugging.
-    if (typeof row === 'undefined') {
-        row = 2;
+function updateSingleRowData(entryId, columnName, newValue) {
+  if (typeof entryId === 'undefined') {
+    entryId = 333;
+    columnName = "Region";
+    newValue = "Unknown";
+  }
+var rowData = getData(entryId);
+  if (!rowData.hasPermission) {
+    throw new Error("No permission to update this row");
+  }
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  var columnIndex = headers.indexOf(columnName);
+
+  if (rowData.data.rowNumber === -1 || columnIndex === -1) {
+    throw new Error("Entry ID or column not found");
+  }
+
+  var entryIdColumn = sheet.getRange(2, entryIdIndex + 1, sheet.getLastRow() - 1, 1).getValues();
+  var rowIndex = rowData.data.rowNumber;//entryIdColumn.findIndex(row => row[0] == entryId);
+
+  if (rowIndex === -1) {
+    throw new Error("Entry ID not found");
+  }
+
+ 
+
+  // Update the cell
+  sheet.getRange(rowIndex , columnIndex + 1).setValue(newValue);
+  return "Update successful";
+}
+function updateSingleRowData2(entryId, columnName, newValue) {
+    if (typeof entryId === 'undefined') {
+        entryId = 333;
+        column = 4;
+        newValue = "Unknown";
+    }
+     var rowData = getData(entryId);
+  if (!rowData.hasPermission) {
+    throw new Error("No permission to update this row");
+  }
+  
+  if (entryIdIndex === -1 || columnIndex === -1) {
+    throw new Error("Entry ID or column not found");
+  }
+  
+  var allData = sheet.getDataRange().getValues();
+  var rowIndex = allData.findIndex(row => row[entryIdIndex] == entryId);
+  
+  if (rowIndex === -1) {
+    throw new Error("Entry ID not found");
+  }
+  
+  sheet.getRange(rowIndex + 1, columnIndex + 1).setValue(newValue);
+  return "Update successful";
+}
+function updateSingleRowData1(entryId, columnName, newValue) {
+    if (typeof entryId === 'undefined') {
+        entryId = 2;
         column = 4;
         newValue = "Unknown";
     }
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    var rowNumber = parseInt(row, 10);
-    var columnNumber = parseInt(column, 10);
-    sheet.getRange(rowNumber, columnNumber).setValue(newValue);
-    return "Update successful";
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var entryIdIndex = headers.indexOf("Entry ID");
+  var columnIndex = headers.indexOf(columnName);
+  
+  if (entryIdIndex === -1 || columnIndex === -1) {
+    throw new Error("Entry ID or column not found");
+  }
+  
+  var allData = sheet.getDataRange().getValues();
+  var rowIndex = allData.findIndex(row => row[entryIdIndex] == entryId);
+  
+  if (rowIndex === -1) {
+    throw new Error("Entry ID not found");
+  }
+  
+  sheet.getRange(rowIndex + 1, columnIndex + 1).setValue(newValue);
+  return "Update successful";
 }
 // Function to update a specific cell in a row
-function updateSingleRowDataOld(row, column, newValue) {
-    var sheet = getYoungProfessionalsSheet();
-    var rowNumber = parseInt(row, 10);
-    var columnNumber = parseInt(column, 10);
-    sheet.getRange(rowNumber, columnNumber).setValue(newValue);
-    return "Update successful";
-}
 
 // Function to get all data from the sheet
 function getAllData() {
+  return getData(undefined, true);
+}
+function getAllData1() {
     var sheet = getYoungProfessionalsSheet();
     var data = sheet.getDataRange().getValues();
     return data;
@@ -168,3 +441,4 @@ function deleteRow(row) {
     sheet.deleteRow(rowNumber);
     return "Row deleted successfully";
 }
+
