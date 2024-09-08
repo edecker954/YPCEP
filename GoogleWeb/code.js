@@ -14,6 +14,7 @@ function openPopup() {
 }
 function doGet(e) {
   var template = HtmlService.createTemplateFromFile("Index");
+  template.title = 'Young Professionals Database';
   template.entryId = e && e.parameter && e.parameter.entryId ? e.parameter.entryId : "332";
 
   var result = getData(template.entryId);
@@ -23,8 +24,14 @@ function doGet(e) {
   template.rowRegion = result.rowRegion;
   template.errorMessage = result.hasPermission ? "" : "Entry ID:" + template.entryId + " not found or no permission";
 
-  var htmlOutput = template.evaluate()
+//  var htmlOutput = template.evaluate()
+ //   .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+ var htmlOutput = HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Young Professionals Database')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+
+    
+  //return htmlOutput;
   return htmlOutput;
 }
 function doGet1(e) {
