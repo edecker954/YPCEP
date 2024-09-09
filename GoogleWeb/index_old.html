@@ -1,349 +1,111 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <base target="_top">
-<style>
-        .form-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            max-width: 800px;
-            margin: auto;
+<script> loadDataOld() {
+        google.script.run
+            .withSuccessHandler(displayData)
+            .withFailureHandler(function (error) {
+                console.error('Error:', error);
+            })
+            .getRowData(entryId);
+    }
+    function loadData_Old() {
+        google.script.run.withSuccessHandler(displayData).getRowData(<?= entryId ?>);
+    }
+    function displayDataOld(data) {
+        console.log('Data received:', data);
+        for (var key in data) {
+            if (data.hasOwnProperty(key)) {
+                var input = document.getElementById(key);
+                if (input) {
+                    input.value = data[key];
+                }
+            }
         }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            padding: 8px;
-            font-size: 1em;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-        }
-
-        .full-width {
-            grid-column: span 2;
-        }
-    </style>
-    <script>
-        var row = <?= row ?>;
-        var hasPermission = <?= hasPermission ?>;
-
-        function loadDataOld() {
-            google.script.run
-                .withSuccessHandler(displayData)
-                .withFailureHandler(function(error) {
-                    console.error('Error:', error);
-                })
-                .getRowData(row);
-        }
-        function loadData() {
-        google.script.run.withSuccessHandler(displayData).getRowData(<?= row ?>);
-      }
-        function displayData(data) {
-    console.log('Data received:', data);
-    for (var key in data) {
-        if (data.hasOwnProperty(key)) {
-            var element = document.getElementById(key);
-            if (element) {
-                if (key === 'Resume') {
-                    element.href = data[key];
-                    element.textContent = data[key] ? 'View Resume' : 'No Resume Available';
+    }
+    function saveChangesWorkingBeforeTrackChanges() {
+        var data = {};
+        var inputs = document.getElementById('dataForm').elements;
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].id) {
+                if (inputs[i].id === 'Resume') {
+                    data[inputs[i].id] = inputs[i].href;
                 } else {
-                    element.value = data[key];
-                  
+                    // Use the original ID (with spaces) as the key
+                    data[inputs[i].id] = inputs[i].value;
                 }
             }
         }
+        console.log("data: " + JSON.stringify(data));
+        google.script.run
+            .withSuccessHandler(function (result) {
+                alert('Changes saved successfully!');
+            })
+            .withFailureHandler(function (error) {
+                console.error('Error:', error);
+                alert('Failed to save changes. Please try again.');
+            })
+            .updateRowData(entryId, data);
     }
-}
-
-        function displayDataOld(data) {
-            console.log('Data received:', data);
-            for (var key in data) {
-                if (data.hasOwnProperty(key)) {
-                    var input = document.getElementById(key);
-                    if (input) {
-                        input.value = data[key];
-                    }
+    function saveChangesOldForHyperLink() {
+        var data = {};
+        var inputs = document.getElementById('dataForm').elements;
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].id) {
+                if (inputs[i].id === 'Resume') {
+                    data[inputs[i].id] = inputs[i].href;
+                } else {
+                    data[inputs[i].id] = inputs[i].value;
                 }
             }
         }
-        let changedFields = {};
-
-function trackChange(field) {
-    changedFields[field] = true;
-}
-
-function saveChanges() {
-    var data = {};
-    var inputs = document.getElementById('dataForm').elements;
-    for (var i = 0; i < inputs.length; i++) {
-        if (inputs[i].id && changedFields[inputs[i].id]) {
-            if (inputs[i].id === 'Resume') {
-                data[inputs[i].id] = inputs[i].href;
-            } else {
-                data[inputs[i].id] = inputs[i].value;
-            }
-        }
+        console.log("data: " + JSON.stringify(data));
+        google.script.run
+            .withSuccessHandler(function (result) {
+                alert('Changes saved successfully!');
+            })
+            .withFailureHandler(function (error) {
+                console.error('Error:', error);
+                alert('Failed to save changes. Please try again.');
+            })
+            .updateRowData(entryId, data);
     }
-    console.log("Changed data: " + JSON.stringify(data));
-    google.script.run
-        .withSuccessHandler(function(result) {
-            alert('Changes saved successfully!');
-            changedFields = {}; // Reset changed fields
-        })
-        .withFailureHandler(function(error) {
-            console.error('Error:', error);
-            alert('Failed to save changes. Please try again.');
-        })
-        .updateRowData(row, data);
-}
-        function saveChangesWorkingBeforeTrackChanges() {
-    var data = {};
-    var inputs = document.getElementById('dataForm').elements;
-    for (var i = 0; i < inputs.length; i++) {
-        if (inputs[i].id) {
-            if (inputs[i].id === 'Resume') {
-                data[inputs[i].id] = inputs[i].href;
-            } else {
-                // Use the original ID (with spaces) as the key
-                data[inputs[i].id] = inputs[i].value;
-            }
-        }
-    }
-    console.log("data: " + JSON.stringify(data));
-    google.script.run
-        .withSuccessHandler(function(result) {
-            alert('Changes saved successfully!');
-        })
-        .withFailureHandler(function(error) {
-            console.error('Error:', error);
-            alert('Failed to save changes. Please try again.');
-        })
-        .updateRowData(row, data);
-}
-        function saveChangesOldForHyperLink() {
-    var data = {};
-    var inputs = document.getElementById('dataForm').elements;
-    for (var i = 0; i < inputs.length; i++) {
-        if (inputs[i].id) {
-            if (inputs[i].id === 'Resume') {
-                data[inputs[i].id] = inputs[i].href;
-            } else {
-                data[inputs[i].id] = inputs[i].value;
-            }
-        }
-    }
-    console.log("data: " + JSON.stringify(data));
-    google.script.run
-        .withSuccessHandler(function(result) {
-            alert('Changes saved successfully!');
-        })
-        .withFailureHandler(function(error) {
-            console.error('Error:', error);
-            alert('Failed to save changes. Please try again.');
-        })
-        .updateRowData(row, data);
-}
     function saveChangesold2() {
-    var data = {};
-    var inputs = document.getElementById('dataForm').elements;
-    for (var i = 0; i < inputs.length; i++) {
-        if (inputs[i].id) {
-            data[inputs[i].id] = inputs[i].value;
+        var data = {};
+        var inputs = document.getElementById('dataForm').elements;
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].id) {
+                data[inputs[i].id] = inputs[i].value;
+            }
         }
+        console.log("data: " + data);
+        google.script.run
+            .withSuccessHandler(function (result) {
+                alert('Changes saved successfully!');
+            })
+            .withFailureHandler(function (error) {
+                console.error('Error:', error);
+                alert('Failed to save changes. Please try again.');
+            })
+            .updateRowData(entryId, data);
     }
-    console.log("data: " + data);
-    google.script.run
-        .withSuccessHandler(function(result) {
-            alert('Changes saved successfully!');
-        })
-        .withFailureHandler(function(error) {
-            console.error('Error:', error);
-            alert('Failed to save changes. Please try again.');
-        })
-        .updateRowData(row, data);
-}
-function checkAndLoadData() {
- // loadData();
-  console.log("Value of hasPermission " + hasPermission)
-  //return;
-        if (hasPermission) {
-          loadData();
-          
-          document.getElementById('noPermissionMessage').style.display = 'none';
-        } else {
-           document.getElementById('dataForm').style.display = 'none';
+    function onRegionChangeSuccessOld() {
+        alert("The user has been sent back to headquarters to evaluate region placement.");
+        google.script.host.close();
+    }
+    function saveChangesold2() {
+        // ... existing saveChanges code ...
+        google.script.run.withSuccessHandler(function () {
+            alert("Changes saved successfully!");
+        }).updateRowData(<?= entryId ?>, formData);
+    }
+    function checkAndLoadDataOld() {
+          //alert("This is the entryId " + entryId);
+                     loadData();
+                     const hasPermissionBool = Boolean(hasPermission);
+                     if (hasPermissionBool) {
+                     document.getElementById('formDiv').style.display = 'none';
+                     }else{
+                      document.getElementById('formDiv').style.display = 'block';
+
+
+                     }
         }
-      }
-        //window.onload = loadData;
-    </script>
-</head>
- <!--<body onload="<?= hasPermission ? 'loadData()' : '' ?>"> -->
-  <!-- <body onload="loadData()">-->
-    <body onload="checkAndLoadData()">
-      <div hidden id="permissionInfo"  >
-      <p>Permission status: <?= hasPermission ? "Granted" : "Denied" ?></p>
-      <p>Permission status: <?= hasPermission ?></p>
-      <p>User Email: <?= userEmail ?></p>
-      <p>Row Region: <?= rowRegion ?></p>
-    </div>
-    <div id="noPermissionMessage" >
-      <p>Sorry, the logged in user (<?= userEmail ?>) does not have permissions for the region: <?= rowRegion ?></p>
-    </div>
-    <h1 hidden >Data for Row <?= row ?></h1>
-    
-    <form id="dataForm" class="form-container">
-       
-        <div class="form-group">
-            <label  for="Entry ID">Entry ID:</label>
-            <input  id="Entry ID" type="text" readonly>
-        </div>
-        <div class="form-group">
-            <label for="Entry Date">Entry Date:</label>
-            <input id="Entry Date" type="date" readonly>
-        </div>
-        <div class="form-group">
-            <label for="Industry of Interest">Industry of Interest:</label>
-            <input id="Industry of Interest" type="text" readonly>
-        </div>
-        <div class="form-group">
-            <label for="Region">Region:</label>
-            <input id="Region" type="text">
-        </div>
-        
-        <div class="form-group">
-            <label for="First Name">First Name:</label>
-            <input id="First Name" type="text"  onchange="trackChange('First Name')" >
-        </div>
-        <div class="form-group">
-            <label for="Last Name">Last Name:</label>
-            <input readonly id="Last Name" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Email">Email:</label>
-            <input id="Email" type="email">
-        </div>
-        <div class="form-group">
-            <label for="Phone">Phone:</label>
-            <input id="Phone" type="tel">
-        </div>
-        <div class="form-group">
-            <label for="Gender">Gender:</label>
-            <select id="Gender" onchange="trackChange('Gender')">
-                <option value="">Select</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Not Specified</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="Date of Birth">Date of Birth:</label>
-            <input id="Date of Birth" type="date">
-        </div>
-        <div class="form-group">
-            <label for="Address">Address:</label>
-            <textarea id="Address" rows="3"></textarea>
-        </div>
-        <div class="form-group">
-            <label for="Country">Country:</label>
-            <input id="Country" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Languages Spoken">Languages Spoken:</label>
-            <input id="Languages Spoken" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Languages Read">Languages Read:</label>
-            <input id="Languages Read" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Languages Written">Languages Written:</label>
-            <input id="Languages Written" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Education Level Attained">Education Level Attained:</label>
-            <input id="Education Level Attained" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Anticipated Graduation Date">Anticipated Graduation Date:</label>
-            <input id="Anticipated Graduation Date" type="date">
-        </div>
-        <div class="form-group">
-            <label for="Employment">Employment:</label>
-            <input id="Employment" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Current Employer">Current Employer:</label>
-            <input id="Current Employer" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Job Title">Job Title:</label>
-            <input id="Job Title" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Interest">Interest:</label>
-            <textarea id="Interest" rows="3"></textarea>
-        </div>
-        <div class="form-group">
-             <label for="Resume">Resume:</label>
-              <a id="Resume" href="" target="_blank">View Resume</a>
-        </div>
-        <div class="form-group">
-            <label for="What programs are you applying for">What programs are you applying for?:</label>
-            <input id="What programs are you applying for" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Short Essay">Short Essay:</label>
-            <textarea id="Short Essay" rows="5"></textarea>
-        </div>
-        <div class="form-group">
-            <label for="Signature">Signature:</label>
-            <input id="Signature" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Age">Age:</label>
-            <input id="Age" type="number" min="0">
-        </div>
-        <div class="form-group">
-            <label for="Status">Status (Active/Alumni):</label>
-            <select id="Status">
-                <option value="">Select</option>
-                <option value="Active">Active</option>
-                <option value="Alumni">Alumni</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="Coach Assigned">Coach Assigned:</label>
-            <input id="Coach Assigned" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Date Accepted into Program">Date Accepted into Program:</label>
-            <input id="Date Accepted into Program" type="date">
-        </div>
-        <div class="form-group">
-            <label for="Program">Program:</label>
-            <input id="Program" type="text">
-        </div>
-        <div class="form-group">
-            <label for="Notes">Notes:</label>
-            <textarea id="Notes" rows="5"></textarea>
-        </div>
-        <div class="form-group">
-          <button  type="button" onclick="saveChanges()">Save Changes</button>
-        </div>
-    </form>
-</body>
-</html>
+</script>
